@@ -1,0 +1,13 @@
+#porthole {
+    position: relative;
+    height: 800px;
+    width: 800px;
+    border: 1px solid black;
+    left: 50%;
+    margin-left: -400px;
+}
+
+#viewport {
+    height: 100%;
+    width: 100%;
+}
