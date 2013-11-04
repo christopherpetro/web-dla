@@ -1,0 +1,110 @@
+<html>
+<head>
+    <title>diffusion-limited aggregation</title>
+
+    <script type="text/javascript" src="jquery-2.0.3.min.js"></script>
+    <link rel="stylesheet" href="dla.css"/>
+</head>
+<body>
+<div id="controls">
+    <div>
+        <span>Initial aggregate: </span>
+        <select id="initial">
+            <option>center</option>
+            <option>edges</option>
+        </select>
+    </div>
+    <div>
+        <span>Size: </span>
+        <select id="size">
+            <option>199</option>
+            <option>399</option>
+            <option>799</option>
+        </select>
+    </div>
+    <div>
+        <span>Particles: </span>
+        <select id="particles">
+            <option>1000</option>
+            <option>5000</option>
+            <option>10000</option>
+            <option>25000</option>
+            <option>50000</option>
+            <option>75000</option>
+            <option>100000</option>
+            <option>125000</option>
+        </select>
+    </div>
+    <div>
+        <span>Show free particles: </span>
+        <input id="showfree" type="checkbox" checked/>
+    </div>
+    <div>
+        <input id="start" type="button" value="Start">
+        <input id="pause" type="button" value="Pause">
+    </div>
+</div>
+<div id="porthole">
+    <canvas id="viewport"></canvas>
+</div>
+
+<script type="text/javascript">
+    var worker = new Worker("dla-worker2.js");
+    var pause = false;
+
+    function generateDla(selector, params) {
+        var vport = $(selector).first();
+        var vwidth = vport.width();
+        var vheight = vport.height();
+        var canvas = vport.get(0);
+        canvas.width = params.xdim;
+        canvas.height = params.ydim;
+        var ctx = canvas.getContext("2d");
+
+        worker.onmessage = function(msg) {
+            var data = msg.data;
+            if (data == "start") {
+                canvas.width = canvas.width;
+                worker.postMessage("tick");
+            } else if (data == "finish") {
+            } else if (Array.isArray(data)) {
+                var color;
+                for (var i = 0; i < data.length; i++) {
+                    var p = data[i];
+                    var c = p[2];
+                    if (c != color) {
+                        ctx.fillStyle = c == 2 ? "#fff" : c == 1 ? "#88c" : "#000";
+                        color = c;
+                    }
+                    ctx.fillRect(p[0], p[1], 1, 1);
+                }
+                if (!pause)
+                    worker.postMessage("tick");
+            } else {
+                console.log(data);
+            }
+        }
+        worker.postMessage(params);
+    }
+
+    $("#start").click(function() {
+        var params = { };
+        params.xdim = params.ydim = $("#size").val();
+        params.pcount = $("#particles").val();
+        params.initial = $("#initial").val();
+        params.showfree = $("#showfree").prop('checked');
+        generateDla("#viewport", params);
+    });
+
+    $("#pause").click(function() {
+        pause = !pause;
+        $("#pause").val(pause ? "Unpause" : "Pause");
+        if (!pause) {
+            worker.postMessage("tick");
+        }
+    });
+
+</script>
+
+</body>
+</html>
